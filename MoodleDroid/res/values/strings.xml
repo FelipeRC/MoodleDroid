@@ -1,0 +1,28 @@
+<resources>
+
+    <string name="app_name">IFPE Moodle Droid</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_splash">SplashActivity</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="ifpe_site">http://www.ifpe.edu.br</string>
+    <string name="str_login">Nome do usuário:</string>
+    <string name="str_senha">Senha:</string>
+    <string name="str_lembrar_usuario">Lembrar Usuário</string>
+    <string name="str_acessar">Acessar</string>
+    <string name="str_sair">Sair</string>
+    <string name="str_nome_perfil">Nome:</string>
+    <string name="str_sobrenome_perfil">Sobrenome:</string>
+    <string name="str_email_perfil">E-mail:</string>
+    <string name="str_cidade_perfil">Cidade:</string>
+    <string name="str_salvar_perfil">Salvar</string>
+    <string name="str_cancelar_perfil">Cancelar</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="title_activity_noticias">NoticiasActivity</string>
+    <string name="title_activity_cursos">CursosActivity</string>
+    <string name="title_activity_perfil">PerfilActivity</string>
+    <string name="str_usuario_salvo">Usuário: </string>
+    <string name="str_login_salvo">Login: </string>
+    <string name="str_usar_outro_usuario">Usar Outro Usuário</string>
+
+</resources>

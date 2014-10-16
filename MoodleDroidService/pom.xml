@@ -46,7 +46,7 @@
 	    	<artifactId>tomcat7-maven-plugin</artifactId>
 	    	<version>2.0</version>
 	    	<configuration>
-	    		<path>/IFMoodleDroidServices</path>
+	    		<path>/MoodleDroidServices</path>
 	    		<port>8080</port>
 	    	</configuration>
 	    </plugin>

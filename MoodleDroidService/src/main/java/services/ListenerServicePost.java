@@ -32,7 +32,7 @@ public class ListenerServicePost {
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public Usuario fazLogin(@FormParam("login") String login,
 			@FormParam("senha") String senha,
-			@FormParam("flagEncriptacao") String flagEncriptacao,
+			@FormParam("flagDecriptacao") String flagEncriptacao,
 			@Context HttpServletResponse servletResponse) throws IOException {
 		Usuario usuario = Fachada.getInstance().retornaUsuario(login, senha,
 				flagEncriptacao);
@@ -47,7 +47,7 @@ public class ListenerServicePost {
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	public ArrayList<Postagem> retornaNoticias(
 			@FormParam("login") String login, @FormParam("senha") String senha,
-			@FormParam("flagEncriptacao") String flagEncriptacao,
+			@FormParam("flagDecriptacao") String flagEncriptacao,
 			@Context HttpServletResponse servletResponse) throws IOException {
 		
 		return Fachada.getInstance().retornaUltimasNoticias(login, senha,
