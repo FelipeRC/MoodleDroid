@@ -47,7 +47,7 @@ public class UsuarioAdapter extends BaseAdapter{
 		      holder = new ViewHolder();
 		      holder.txtNome = (TextView) 
 		    		  view.findViewById(R.id.txtNomeUsuario);
-		      holder.txtLogin = (TextView) view.findViewById(R.id.txtLogin);
+		      holder.txtLogin = (TextView) view.findViewById(R.id.txtUserName);
 		      
 		      
 		      view.setTag(holder);

@@ -4,7 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -37,127 +39,251 @@ import com.felipetcc.moodledroid.db.DBHelper;
 import com.felipetcc.moodledroid.db.RepositorioUsuario;
 import com.felipetcc.moodledroid.handler.UsuarioHandler;
 import com.felipetcc.moodledroid.model.Usuario;
+import com.felipetcc.moodledroid.network.IRequestCallback;
+import com.felipetcc.moodledroid.network.NetworkQueue;
 import com.felipetcc.moodledroid.util.Constantes;
 
 public class LoginActivity extends Activity {
+	
+	public static final String TAG = LoginActivity.class.getSimpleName();
 
 	private EditText edtUsername;
 	private EditText edtSenha;
-	private CheckBox cbLembrar;
-	private String login;
+	private CheckBox cbSalvarUsuario;
+	private String username;
 	private String senha;
 	private List<Usuario> usuariosSalvos = null;
 	private UsuarioAdapter usuarioAdapter;
+	private ProgressDialog dialog;
+	private String accessToken;
 	
+	private IRequestCallback<String> requestLoginCallback;
+	private IRequestCallback<String> requestUserInfoCallback;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 	}
-
-	private void carregaTelaLoginSalvo() {
-		 setContentView(R.layout.login_salvo_layout);
-		 
-		 ListView listLogin = (ListView) findViewById(R.id.listView1);
-			usuarioAdapter = new UsuarioAdapter(this, usuariosSalvos);
-			listLogin.setAdapter(usuarioAdapter);		
-	}
-
+	
 	@Override
 	protected void onResume() {
-
 		super.onResume();
+		
+		Log.d(TAG, "Recuperando usuários salvos.");
 		RepositorioUsuario repositorioUsuario = new RepositorioUsuario(
 				new DBHelper(this));
 		usuariosSalvos = repositorioUsuario.getUsuarios();
 
+		
 		if (usuariosSalvos != null && usuariosSalvos.size() > 0) {
-			carregaTelaLoginSalvo();
-
+			Log.d(TAG, "Carregando tela com lista de usuários salvos.");
+			carregaTelaUsuariosSalvos();
+			
 		} else {
-			carregaTelaLoginPrincipal();
+			Log.d(TAG, "Carregando tela para primeiro acesso.");
+			carregaTelaAcessoPrincipal();
 		}
-		
-		overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-	}
-	
-	public void btConfirmarPressed(View v){
-		
-		LinearLayout linearLayout= (LinearLayout) v.getParent().getParent().getParent();
-		TextView textLogin = (TextView) linearLayout.findViewById(R.id.txtLogin);
-		
-		Usuario usuario = UsuarioHandler.pesquisarUsuarioSalvo(textLogin.getText().toString(), this);
-		
-		new DownloadJsonAsyncTask().execute(Constantes.URL_VERIFICA_USUARIO, usuario.getLogin(), usuario.getSenha(), "0", "1");
 
+		overridePendingTransition(android.R.anim.fade_in,
+				android.R.anim.fade_out);
+		
+		preparaRequestCallback();
+	}
+
+	/**
+	 * Inicia a tela com uma lista de usuários salvos
+	 */
+	private void carregaTelaUsuariosSalvos() {
+		setContentView(R.layout.usuarios_salvos_layout);
+		ListView listLogin = (ListView) findViewById(R.id.usuarios_salvos_list);
+		usuarioAdapter = new UsuarioAdapter(this, usuariosSalvos);
+		listLogin.setAdapter(usuarioAdapter);
 	}
 	
-	public void btdeletarPressed(View view){
-		
-		LinearLayout linearLayout= (LinearLayout) view.getParent().getParent().getParent();
-		TextView textLogin = (TextView) linearLayout.findViewById(R.id.txtLogin);
-		
-		UsuarioHandler.removerUsuarioSalvo(textLogin.getText().toString(), this);
-		
-		onResume();
-	}
-	
-	public void outroUsuario(View view){
-		
-		setContentView(R.layout.login_layout_auxiliar);
-		edtUsername = (EditText) findViewById(R.id.edtLogin);
-		edtSenha = (EditText) findViewById(R.id.edtSenha);
-		cbLembrar = (CheckBox) findViewById(R.id.cBLembrar);
-		
-	}
-	
-	private void carregaTelaLoginPrincipal(){
+	/**
+	 * Inicia a tela com os campos username e passwords para serem preenchidos pelo usuário
+	 */
+	private void carregaTelaAcessoPrincipal() {
 		setContentView(R.layout.login_layout);
 		edtUsername = (EditText) findViewById(R.id.edtLogin);
 		edtSenha = (EditText) findViewById(R.id.edtSenha);
-		cbLembrar = (CheckBox) findViewById(R.id.cBLembrar);
+		cbSalvarUsuario = (CheckBox) findViewById(R.id.cBLembrar);
 	}
 	
-	public void clickSair(View v){
-		onBackPressed();
+	/**
+	 * inicializa os callbacks
+	 */
+	private void preparaRequestCallback(){
+		
+		requestLoginCallback = new IRequestCallback<String>() {
+
+			@Override
+			public void onRequestResponse(String response) {
+				try {
+					Log.d(TAG, "Convertendo o response para um JSONObject");
+					JSONObject jsonObject = new JSONObject(response);
+					Log.d(TAG, "Recuperando o token do json retornado.");
+					accessToken = jsonObject.getString("token");
+					Log.d(TAG, "Verificando se o json contem o token.");
+					if(accessToken == null || accessToken.isEmpty()){
+						dialog.hide();
+						//TODO rever mensagem de erro
+						Toast.makeText(getApplicationContext(), "Erro no login.", Toast.LENGTH_LONG).show();
+					}else{
+						Log.d(TAG, "Preparando a requisicao para buscar as informacoes do usuario.");
+						Map<String, String> params = new HashMap<String, String>();
+						params.put(Constantes.PARAM_TOKEN, accessToken);
+						params.put(Constantes.PARAM_FUNCTION, Constantes.FUNCTION_GET_INFO_NAME);
+						params.put(Constantes.PARAM_RESPONSE_FORMAT, Constantes.JSON_RESPONSE_FORMAT);
+						Log.d(TAG, "Colocando requisicao na fila.");
+						NetworkQueue.getInstance(getApplicationContext())
+								.doStringRequestByPOST(Constantes.URL_REST_REQUEST, TAG, requestUserInfoCallback, params);
+					}
+				} catch (JSONException e) {
+					Log.e(TAG, e.getMessage());
+					dialog.hide();
+				}
+			}
+
+			@Override
+			public void onRequestError(Exception error) {
+				Log.e(TAG, error.getMessage());
+				dialog.hide();
+			}
+		};
+		
+		requestUserInfoCallback = new IRequestCallback<String>() {
+			
+			@Override
+			public void onRequestResponse(String response) {
+				try {
+					Log.d(TAG, "Convertendo o response para um JSONObject");
+					JSONObject result = new JSONObject(response);
+					
+					//TODO código parcial para chamar tela de home do sistema
+					Intent intent = new Intent(LoginActivity.this,
+							HomeActivity.class);
+					Usuario usuario = new Usuario();
+					try {
+						usuario.setNome(result.getString("firstname"));
+						usuario.setSobrenome(result.getString("lastname"));
+						usuario.setSenha(senha);
+						usuario.setLogin(username);
+					} catch (JSONException e) {
+						Log.e(TAG, e.getMessage());
+					}
+					intent.putExtra("usuario", usuario);
+
+					startActivity(intent);
+					
+				} catch (JSONException e) {
+					Log.e(TAG, e.getMessage());
+				}
+				dialog.hide();
+			}
+			
+			@Override
+			public void onRequestError(Exception error) {
+				Log.e(TAG, error.getMessage());
+				dialog.hide();
+			}
+		};
+		
 	}
+
 	
-	public void voltarPressed(View view){
-		carregaTelaLoginSalvo();
-	}
+	//-------------------LISTENERS-------------------
 	
-	public void clickAcessar(View v){
-		login = edtUsername.getText().toString();
+	public void clickAcessar(View v) {
+		Log.d(TAG, "Recuperando valores dos campos da tela.");
+		username = edtUsername.getText().toString();
 		senha = edtSenha.getText().toString();
-		int flagSalvar = 0;
 
-		if (cbLembrar.isChecked()) {
-			flagSalvar = 1;
-		}
-
-		if (login == null || login.equals("") || senha == null
+		Log.d(TAG, "Verificando se os campos estão preenchidos.");
+		if (username == null || username.equals("") || senha == null
 				|| senha.equals("")) {
 			Toast.makeText(this, "Por favor, digite seus dados de acesso.",
 					Toast.LENGTH_SHORT).show();
 		} else {
-			new DownloadJsonAsyncTask().execute(Constantes.URL_VERIFICA_USUARIO, login, senha, Integer.toString(flagSalvar), "0");
+			dialog = ProgressDialog.show(LoginActivity.this, "Aguarde",
+					"Carregando usuário...");
+			
+			Log.d(TAG, "Preparando requisição para pegar o token e as informacoes do usuario.");
+			Map<String, String> params = new HashMap<String, String>();
+			params.put(Constantes.PARAM_SERVICE, Constantes.SERVICE_NAME);
+			params.put(Constantes.PARAM_USERNAME, username);
+			params.put(Constantes.PARAM_PASSWORD, senha);
+			Log.d(TAG, "Colocando requisição na fila.");
+			NetworkQueue.getInstance(getApplicationContext())
+					.doStringRequestByPOST(Constantes.URL_GET_TOKEN, TAG, requestLoginCallback, params);
+			
 		}
 	}
 	
 	
+	//----------------------------------------------------------------------------------------
+	//Código antigo daqui por diante
+	public void btConfirmarPressed(View v) {
+
+		LinearLayout linearLayout = (LinearLayout) v.getParent().getParent()
+				.getParent();
+		TextView textUserName = (TextView) linearLayout
+				.findViewById(R.id.txtUserName);
+
+		Usuario usuario = UsuarioHandler.pesquisarUsuarioSalvo(textUserName
+				.getText().toString(), this);
+
+		new DownloadJsonAsyncTask().execute(Constantes.URL_VERIFICA_USUARIO,
+				usuario.getLogin(), usuario.getSenha(), "0", "1");
+
+	}
+
+	public void btdeletarPressed(View view) {
+
+		LinearLayout linearLayout = (LinearLayout) view.getParent().getParent()
+				.getParent();
+		TextView textLogin = (TextView) linearLayout
+				.findViewById(R.id.txtUserName);
+
+		UsuarioHandler
+				.removerUsuarioSalvo(textLogin.getText().toString(), this);
+
+		onResume();
+	}
+
+	public void outroUsuario(View view) {
+
+		setContentView(R.layout.login_layout_auxiliar);
+		edtUsername = (EditText) findViewById(R.id.edtLogin);
+		edtSenha = (EditText) findViewById(R.id.edtSenha);
+		cbSalvarUsuario = (CheckBox) findViewById(R.id.cBLembrar);
+
+	}
+
+	
+
+	public void clickSair(View v) {
+		onBackPressed();
+	}
+
+	public void voltarPressed(View view) {
+		carregaTelaUsuariosSalvos();
+	}
+
+	
+
 	/*
-	 * Classe interna Responsável por rodar em background e fazer o Download
-	 * do arquivo Json
-	 * 
-	*/
+	 * Classe interna Responsável por rodar em background e fazer o Download do
+	 * arquivo Json
+	 */
 	class DownloadJsonAsyncTask extends AsyncTask<String, Void, JSONObject> {
 
 		private ProgressDialog dialog;
-		
-		
+
 		String flagSalvar = "";
 		String login = "";
 		String senha = "";
-		
+
 		@Override
 		protected void onPreExecute() {
 			// TODO Auto-generated method stub
@@ -172,8 +298,8 @@ public class LoginActivity extends Activity {
 			login = params[1];
 			senha = params[2];
 			flagSalvar = params[3];
-			String result = getRESTFileContent(params[0], login, senha, params[4]);
-			
+			String result = getRESTFileContent(params[0], login, senha,
+					params[4]);
 
 			Log.i("URL URL URL URL URL", params[0]);
 
@@ -240,7 +366,7 @@ public class LoginActivity extends Activity {
 						.show();
 			}
 		}
-		
+
 		private String toString(InputStream is) throws IOException {
 
 			byte[] bytes = new byte[1024];
@@ -251,15 +377,17 @@ public class LoginActivity extends Activity {
 			}
 			return new String(baos.toByteArray());
 		}
-		
-		public String getRESTFileContent(String url, String loginUsuario, String senhaUsuario, String flagUsuarioSalvo) {
+
+		public String getRESTFileContent(String url, String loginUsuario,
+				String senhaUsuario, String flagUsuarioSalvo) {
 			HttpClient httpclient = new DefaultHttpClient();
-			
+
 			HttpPost httpPost = new HttpPost(url);
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(3);
 			nameValuePairs.add(new BasicNameValuePair("login", loginUsuario));
 			nameValuePairs.add(new BasicNameValuePair("senha", senhaUsuario));
-			nameValuePairs.add(new BasicNameValuePair("flagDecriptacao", flagUsuarioSalvo));
+			nameValuePairs.add(new BasicNameValuePair("flagDecriptacao",
+					flagUsuarioSalvo));
 
 			try {
 				httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));

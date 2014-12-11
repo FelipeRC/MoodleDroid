@@ -76,3 +76,9 @@ local.properties
  
 # PDT-specific
 .buildpath
+
+#volley
+volley
+
+
+.MoodleDroidService

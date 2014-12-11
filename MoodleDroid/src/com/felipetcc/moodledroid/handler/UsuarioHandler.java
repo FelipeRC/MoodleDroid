@@ -10,11 +10,11 @@ public class UsuarioHandler {
 
 	
 	
-	public static void removerUsuarioSalvo(String login, Context context){
+	public static void removerUsuarioSalvo(String username, Context context){
 		
 		RepositorioUsuario repositorioUsuario = new RepositorioUsuario(
 				new DBHelper(context));	 
-		repositorioUsuario.remover(login);
+		repositorioUsuario.remover(username);
 		
 	}
 
