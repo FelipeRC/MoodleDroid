@@ -1,10 +1,8 @@
 package com.felipetcc.moodledroid.network;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import android.app.Application;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
