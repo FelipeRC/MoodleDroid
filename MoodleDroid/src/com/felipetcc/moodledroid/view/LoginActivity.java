@@ -26,6 +26,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -59,11 +60,6 @@ public class LoginActivity extends Activity {
 	
 	private IRequestCallback<String> requestLoginCallback;
 	private IRequestCallback<String> requestUserInfoCallback;
-
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-	}
 	
 	@Override
 	protected void onResume() {

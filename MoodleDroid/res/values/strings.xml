@@ -24,5 +24,12 @@
     <string name="str_usuario_salvo">Usuário: </string>
     <string name="str_login_salvo">Login: </string>
     <string name="str_usar_outro_usuario">Usar Outro Usuário</string>
+    
+    <string name="ifpe_name">IFPE</string>
+    <string name="ifpe_logo_description">Nome de Usuário</string>
+    <string name="username">Nome de Usuário</string>
+    <string name="password">Senha</string>
+    <string name="back">Voltar</string>
+    <string name="project_name">Moodle Droid</string>
 
 </resources>

@@ -1,13 +1,15 @@
 package com.felipetcc.moodledroid.view;
 
 
-import com.felipetcc.moodledroid.R;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
+import android.view.Window;
+
+import com.felipetcc.moodledroid.R;
 
 /**
  * Activiy usada apenas para controlar a tela de Splash.
@@ -18,6 +20,12 @@ import android.view.View;
 public class SplashActivity extends Activity implements Runnable{
 
 	private Handler handler;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+	}
 	
 	@Override
 	protected void onResume() {
